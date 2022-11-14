@@ -1,2 +1,2 @@
 # SOK-1004
-Her vil laste opp oppgaver og prosjekter
+Her vil jeg laste opp oppgaver og prosjekter
