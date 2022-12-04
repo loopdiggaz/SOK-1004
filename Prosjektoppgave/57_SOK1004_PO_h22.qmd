@@ -1,0 +1,409 @@
+---
+title: "57_SOK1004_PO_h22"
+
+author: “57”
+
+format: pdf
+
+echo: true
+
+output: true
+
+editor: visual
+---
+
+```{r, output: false warnings: false}
+
+Sys.setlocale(locale="no_NO")
+rm(list=ls()) 
+
+suppressPackageStartupMessages({
+library(tidyverse)
+library(ggthemes)
+library(openxlsx)
+library(ggpubr)
+})
+
+
+url <- "https://modals.li/downloads/gini_series_norway.xlsx"
+
+df_gini <- url %>%  
+  read.xlsx(sheet=1) %>% 
+  as_tibble()
+
+df_gini_navn <- df_gini %>% 
+  names()
+
+df_gini<- df_gini %>%
+  pivot_longer(!year,
+               names_to = "var", 
+               values_to = "verdi")
+
+url <- "https://github.com/uit-sok-1004-h22/uit-sok-1004-h22.github.io/blob/main/rkode/inntektsandeler.xlsx?raw=true"
+  
+df_andeler <- url %>%  
+  read.xlsx() %>% 
+  as_tibble()  
+
+df_andeler_navn <- df_gini %>% 
+  names()
+
+df_andeler <- df_andeler %>%
+  pivot_longer(!year,
+               names_to = "var", 
+               values_to = "verdi")
+
+df_andeler <- df_andeler %>% 
+  filter(year>=1875)
+
+url <- "https://github.com/uit-sok-1004-h22/uit-sok-1004-h22.github.io/blob/e36b270c865e077f797e9426e32b47740f2f3847/rkode/bnp.xlsx?raw=true"
+
+df_bnp <- url %>%  
+  read.xlsx(sheet=1) %>% 
+  as_tibble()
+
+navn_BNP <- df_bnp %>% 
+  names()
+
+df_bnp <- df_bnp %>% 
+  rename(BNP = navn_BNP[2],
+         year = navn_BNP[1])
+
+df_bnp <- df_bnp %>% 
+  mutate(DLBNP = 100*(log(BNP)-lag(log(BNP))))
+
+df_bnp <- df_bnp %>% 
+  filter(year >= 1875)
+```
+
+#### Oppgave I
+
+Betrakt følgende figurer.
+
+```{r,warnings: false}
+df_gini %>%
+  filter(year >= 1875) %>%
+  filter(year <= 2017) %>%
+  filter(var %in% df_gini_navn[4]) %>%
+  ggplot(aes(x=year,y=verdi)) +
+  geom_line() +
+  geom_smooth() +
+  ylim(0.25,0.75) +
+  theme_bw() +
+  labs(title = "Gini-koeffisienter for inntektsfordelingen i Norge",
+       subtitle = "1875–2017. Gjennomsnitt av øvre og nedre grense.",
+       y="Gini-koeffisient",
+       x="År",
+       caption = "Kilde: Modalsli, Aaberge og Atkinson (2021)")
+```
+
+Figuren gir et langsiktig perspektiv på inntektsfordeling. I figuren ser man at ved inngangen til 1900-tallet så har Norge en gini-koeffisienten på om lag 0.6. Gini-koeffisienten angis som en tallverdi mellom 0 og 1. Der 0 indikerer at inntekten er spredt jevnt utover befolkningen (perfekt likhet), og 1 indikerer at all inntekt er samlet hos en person (perfekt ulikhet). Over hele perioden opplever Norge totalt sett en nedgang i gini-koeffisienten (mer likhet).
+
+I fra starten av 1900-tallet frem til 1940 varierer koeffisienten en god del, men i perioden 1920-1930 er den ganske stabil. Koeffisienten ligger på et høyt nivå med en ganske skjev fordeling. Perioden 1918 til 1939 er det som kalles for mellomkrigstiden. Noe av det mest slående ved denne perioden er arbeidsledighet og pengepolitikk (Tvedt, 2022). Høy arbeidsledighet er ofte forbundet med økonomisk ulikhet, og hvor mye disse forholdene samspiller er et interessant spørsmål.
+
+```{r}
+df_bnp %>%
+filter(year %in% c(1920:1930)) %>% 
+mutate(BNP = log(BNP)) %>% 
+ggplot(aes(x=year,y=BNP)) +
+geom_line() +
+geom_smooth() +
+theme_bw() +
+labs(title = "BNP per person",
+     subtitle = "Log faste-2005 kroner. 1875-2017.",
+     y="BNP per person",
+     x="År",
+     caption = "Kilde: Norges Bank")
+```
+
+Figuren viser bruttonasjonalprodukt per person i et langsiktig perspektiv (endret til tiårsperioden 1920-1930). BNP er et mål på alt som produseres i et land, minus de varene og tjenestene som blir brukt under produksjonen. BNP er nyttig fordi det gir oss en statistisk verdi som sier noe om tilstanden og utviklingen i økonomien. BNP sier ikke alt om et lands økonomi og tilstand, men vi kan si at det gir oss "pulsen", noe som gir oss en god pekepinne på hvor mye verdier som skapes. I figuren er BNP delt på antall innbyggere , og målt i faste priser. Det vil si at prisen er justert for prisstigning, det er altså tatt hensyn til at man ikke får like mye for samme kronebeløp i et år som et annet (SSB). Figuren er skalert logaritmisk.
+
+Figuren viser at økonomien vokser. Det blir produsert mer varer og tjenester per person, og vi tolker dette som økonomisk vekst. BNP per person ligger på om lag 10.6 i 1920 og øker til om lag 10.9 i 1930 - en relativt stor økning.
+
+```{r}
+df_bnp %>%
+filter(year >= 1875) %>%
+ggplot(aes(x=year,y=DLBNP)) +
+geom_line() +
+geom_smooth() +
+theme_bw() +
+xlim(1920,1930) +
+labs(title = "BNP per person",
+     subtitle = "Årlig endring. Log faste-2005 kroner. 1875-2017",
+     y="BNP per person",
+     x="År",
+     caption = "Kilde: Norges Bank")
+```
+
+Denne figuren viser også BNP per person med faste 2005 priser, men med årlige endringer. I figuren ser vi mer tydelig hvor mye økonomien svinger. Paripolitikken har vært synonymt med usikkerhet knyttet til økonomien og pengeverdien. Og i figuren ser man at økonomien er ustabil med store svingninger som vi kan knytte til den ustabile pengeverdien.
+
+#### Oppgave II
+
+Betrakt følgende figurer.
+
+**Merknad.** Inntektene må skaleres når vi beregner andeler. La $a_{x-y,t}$ være inntektsandelen til intervallet mellom $x$ og $y$ i år $t$. BNP per person i år $t$ er gitt ved $\text{bnp}_{t}$ og er lagret i `df_bnp`. For eksempel så vil $a_{50-60,2005}$ og $bnp_{2005}$ være gitt ved `df_andeler$share_50_60` og `df_bnp$BNP` når `year` er lik `2005`. Da vil gjennomsnittlig inntekt i intervallet være gitt ved $$a_{x-y,t}\times\frac{100}{x-y}\times \text{bnp}_{t}.$$
+
+```{r}
+#| output: false
+
+# ny tabell hvor vi skal beregne inntekter
+df <- df_andeler 
+
+# lagrer en liste med årene hvor vi har observasjoner med inntektsandeler
+years_list <- df$year %>% 
+  unique()
+
+# wide-format er enklere
+df <- df %>% 
+  pivot_wider(names_from = var, values_from = verdi) 
+
+# ny tabell med bnp-tall for årene hvor vi har observasjoner
+df_temp <- df_bnp %>% 
+  filter(year %in% years_list)
+
+# anstendige navn
+df <- df %>%
+  rename("0-10" = "share_0_10",
+         "10-20" = "share_10_20",
+         "20-30" = "share_20_30",
+         "30-40" = "share_30_40",
+         "40-50" = "share_40_50",
+         "50-60" = "share_50_60",
+         "60-70" = "share_60_70",
+         "70-80" = "share_70_80",
+         "80-90" = "share_80_90",
+         "90-100" = "share_90_100",
+         "90-99" = "share_90_99",
+         "99-100" = "share_99_100")
+
+# lagrer navn
+df_navn <- df %>% 
+  names()
+
+df <- df %>% 
+  mutate(`0-10`=10*`0-10`*df_temp$BNP,
+         `10-20`  = (100/10)*`10-20`*df_temp$BNP,
+         `20-30`  = (100/10)*`20-30`*df_temp$BNP,
+         `30-40`  = (100/10)*`30-40`*df_temp$BNP,
+         `40-50`  = (100/10)*`40-50`*df_temp$BNP,
+         `50-60`  = (100/10)*`50-60`*df_temp$BNP,
+         `60-70`  = (100/10)*`60-70`*df_temp$BNP,
+         `70-80`  = (100/10)*`70-80`*df_temp$BNP,
+         `80-90`  = (100/10)*`80-90`*df_temp$BNP,
+         `90-100` = (100/10)*`90-100`*df_temp$BNP,
+         `90-99`  = (100/9)*`90-99`*df_temp$BNP,
+         `99-100` = (100/1)*`99-100`*df_temp$BNP,)
+
+df <- df %>%
+  pivot_longer(!year,
+               names_to = "var", 
+               values_to = "verdi")
+
+andeler <- df$var %>% 
+  unique()
+```
+
+```{r}
+df %>% 
+  filter(year %in% c(1920:1930)) %>% 
+  filter(var %in% andeler[1:10]) %>% 
+  mutate(verdi=verdi/(10^5)) %>%
+  ggplot(aes(x=year,y=verdi,color=var)) +
+  geom_line(size=1.25) +
+  labs(title = "BNP per person",
+       subtitle = "Hundretusener faste 2005-kroner. Fordelt på inntektsdesiler. 1900-1950",
+       y = "BNP per person",
+       x = "År",
+       color = "Desil",
+       caption = "Kilder: Modalsli, Aaberge og Atkinson (2021), Norges Bank") +
+theme_bw() 
+```
+
+Figuren viser BNP per person målt i hundretusener med faste 2005 kroner. Utvalget er inntektsfordelt i 10 desiler. Den øverste desilen er den delen av befolkningen med størst BNP per person, og den nederste desilen er den delen av befolkningen med minst BNP per person. Her ser vi tydelige forskjeller i hvor mye som produseres per desil. De som befinner seg i den øverste desilen har en BNP på om lag 250 tusen kroner per person. Mens de som befinner seg i den nederste desilen har en BNP per person på om lag 2500 kroner. Dette underbygger den skjeve fordelingen vi så i gini-koeffisienten. Videre er det vanskelig å sammenligne de nederste desilene, de ligger for kompakt.
+
+```{r}
+df %>% 
+  filter(year %in% c(1920:1930)) %>% 
+  mutate(verdi=log(verdi)) %>% 
+  filter(var %in% andeler[1:10]) %>% 
+  
+  ggplot(aes(x=year,
+             y=verdi,
+             color=var)) +
+  
+  geom_line(size=1.25) +
+  
+  labs(title = "Log BNP per person", 
+       subtitle = "Faste 2005-kroner. Fordelt på inntektsdesiler. 1900 - 1930",
+       y = "Log BNP per person",
+       x = "År",
+       color =  "Desil",
+       caption = "Kilder: Modalsli, Aaberge og Atkinson (2021), Norges Bank") +
+theme_bw() 
+```
+
+Her er det brukt en logaritmisk skala, slik at vi enklere kan skille mellom desilene som lå veldig kompakt i figuren over. Av figuren ser man at den nederste desilen kommer seg på på et høyere nivå av BNP, og er ved utgangen av tiårsperioden på samme nivå som desilen som lå over ved første halvdel. De fleste desilene opplever en økning i BNP, og da spesielt den nederste desil.
+
+#### Oppgave III
+
+## Arbeidsledighet og økonomisk fremgang på 1920-tallet
+
+I denne besvarelsen skal jeg se nærmere på arbeidsledighet og økonomisk vekst i Norge på 1920-tallet. Jeg vil starte med å presentere statistikk knyttet til arbeidsledighet og yrkesaktiviteten i de forskjellige næringene, og deretter se nærmere på statistikken knyttet til den økonomiske veksten.
+
+1920-tallet er paradoksalt nok en periode med både høy arbeidsledighet og økonomisk vekst, dette skal besvarelsen undersøke nærmere.
+
+```{r}
+library(httr)
+# Henter data. 
+url <- "https://github.com/loopdiggaz/SOK-1004/raw/main/Prosjektoppgave/personer_etter_yrkesaktivitet.xlsx"
+
+# Laster inn data. 
+personer_etter_yrkesaktivitet <- url %>%  
+  read.xlsx(sheet=1) %>% 
+  as_tibble()
+
+# Gir dataen enklere navn.
+df_yrkesaktive <- personer_etter_yrkesaktivitet 
+
+# Fjerner kolonne. 
+df_yrkesaktive <- df_yrkesaktive %>% 
+  select(-Header)
+
+# Rydder i dataen. 
+df_yrkesaktive <- df_yrkesaktive %>% 
+  pivot_longer(2:7, names_to = "år"
+               , values_to = "verdi" ) %>% 
+  rename(næring = Næring1)
+```
+
+```{r}
+# Filtrerer ut år 1920.
+df_yrkesaktive_1920 <- df_yrkesaktive %>% 
+  filter(år == "1920")
+
+# Fjerner rad som mangler verdier. 
+df_yrkesaktive_1920 <- df_yrkesaktive_1920[-9,] 
+
+# Filtrerer ut grupper som er interessante. 
+df_yrkesaktive_1920 <- df_yrkesaktive_1920 %>% 
+  filter(næring == "Yrkesaktive" |
+           næring == "Ikke yrkesaktive" |
+           næring == "Personer 15 år og over i alt") 
+
+library(ggthemes)
+
+# Lager geom_col.
+df_yrkesaktive_1920 %>% 
+ggplot(aes(x=næring,y=factor(verdi)
+           , fill = næring)) +
+  geom_col() + 
+  labs(title = "Arbeidsledighet 1920 - over 15 år"
+       , subtitle = "Yrkesaktive og ikke yrkesaktive" 
+       , x ="",y="Antall"
+       , caption = "Figur 1.1. Kilde : Historisk statistikk fra SSB") +
+  theme_fivethirtyeight() # Legger til et fint theme. 
+
+```
+
+I figuren sammenlignes yrkesaktive med ikke yrkesaktive, utifra totalen av personer som er 15 år og over. Figuren gir god oversikt over yrkesaktiviteten. Definisjonen av "yrkesaktiv" har variert, men før 1970 betydde det at en person hadde et "hovedyrke" og at all inntekt kom fra denne kilden (SSB, Historisk statistikk). Besvarelsen bruker begrepene ikke yrkesaktiv og arbeidsledig om en annen.
+
+I figuren ser man at det er om lag 1,8 millioner personer som er over 15 år i alt. Av disse er det om lag 1,06 millioner yrkesaktive, og 731 tusen ikke yrkesaktive. Det er altså et stort antall ikke yrkesaktive personer. Arbeidsledighet er nevnt som et trekk ved 1920-tallet, og som vi ser underbygger statistikken dette.
+
+```{r}
+url <- "https://github.com/loopdiggaz/SOK-1004/raw/main/Prosjektoppgave/personer_etter_yrkesaktivitet_prosent.xlsx"
+
+personer_etter_yrkesaktivitet_prosent <- url %>%  
+  read.xlsx(sheet=1) %>% 
+  as_tibble()
+
+df_yrkesaktive_prosent <- personer_etter_yrkesaktivitet_prosent 
+#Gir dataen enklere navn.
+
+df_yrkesaktive_prosent <- df_yrkesaktive_prosent %>% 
+  pivot_longer(2:7, names_to = "år", values_to = "verdi" ) %>% 
+  rename(næring = Næring1)
+
+df_yrkesaktive_prosent %>% 
+  filter(næring != "Ikke yrkesaktive"
+         ,næring != "Yrkesaktive1"
+         ,næring != "Personer 15 år og over i alt"
+         ,næring != "Uoppgitt") %>% 
+  filter(år == "1920" | år == "1930") %>% 
+  ggplot(aes(x=verdi,y= næring, color = år)) + 
+  geom_point() +
+  labs(title = "Yrkesaktivitet - næringer"
+       ,subtitle = "prosent sammenligning av 1920 og 1930", caption ="Figur 1.2. Kilde : Historisk statistikk fra SSB") + 
+  theme_fivethirtyeight()
+```
+
+Figuren viser utviklingen antall yrkesaktive i forkjellige næringer. Det er nedgang i flere av de og spesielt i de to største næringene som var industri og jordbruk. Det er også nedgang i antall yrkesaktive i næringene: Bygge- anleggsvirksomhet, finansinstitusjoner og eiendomsdrift, kraft og vannforsyning og skogbruk og jakt. Nedgangen i antall yrkesaktive er sammensatt og kan ha hatt mange årsaker, men besvarelsen vil fokusere på endringer i strukturen eller "den nye arbeidsdagen" som oppsto i første halvdel av 1900-tallet (Tvedt, 2022).
+
+#### Endringer i strukturen 
+
+Mellomkrigstiden var preget av en modernisering og av teknologiske nyvinninger. Dette forårsaket endringer i arbeids strukturen og kan forklares ved hjelp av begrepet strukturell arbeidsledighet. Strukturell arbeidsledighet skyldes tilpasningsvansker som oppstår for arbeidskraften når det skjer endringer i produksjonsforholdene, for eksempel når nye produksjonsmetoder og redskaper overtar de gamle (Stokke, Aarvaag og Stoltz, 2022).
+
+Flere av næringene utnyttet ny teknologi som var arbeidssparende. I figur 1.2 ser vi hvordan jordbruk hadde en stor nedgang i antall ansatte. Jordbruket ble mekanisert og det ble tatt i bruk nye produksjonsmetoder som treskeverk, slåmaskiner og maskinutstyr (Tvedt, 2022). Det ble også lagt nye strukturer i industrien. Strukturene var arbeidssparende og teknologien gjorde det mulig å automatisere oppgaver. Slik ble lavt utdannede personer lett erstattet. I figur 1.2 ser vi at industrien også hadde en nedgang i antall yrkesaktive. \
+I fiske var det en overgang fra åre og seil til motor, og man begynte å bruke dampskip (Tvedt, 2022), men hadde derimot en økning i antall yrkesaktive. Slik sett kan vi tolke endringene som en sammensatt problemstilling, og selv om næringslivet utnyttet ny teknologi var det næringer som økte i antall yrkesaktive.
+
+Videre var mellomkrigstiden en periode med økonomisk fremgang. Industrien utnyttet billig fossekraft, og begynte investere utenlands. Det oppsto nye næringer som gruvedrift, jern og metall industri og malmutvinning (Tvedt, 2022). Disse næringene var med på å stimulere økonomien.
+
+```{r}
+# Filtrerer ut næring og endrer år til numeric. 
+ikke_yrkesaktive <- df_yrkesaktive %>% 
+  filter(næring == "Ikke yrkesaktive") %>% 
+  mutate(år = as.numeric(år))
+
+# Laster pakke for skala. 
+library(scales)
+
+# Plotter med geom_line og geom_point:
+ikke_yrkesaktive %>% 
+  ggplot(aes(x=år,y=verdi, color = "Ikke yrkesaktive")) + 
+  geom_line() + 
+  geom_point() + 
+  scale_y_continuous(labels=comma) + 
+  labs(title="Ikke yrkesaktive fra 1875 til 1930"
+       ,caption = "Figur 1.3. Kilde : Historisk statistikk fra SSB") + theme_fivethirtyeight() 
+```
+
+I figuren ser man utviklingen av arbeidsledighet i et lengre tidsperspektiv. Økningen i arbeidsledighet er tydelig. Figuren viser en jevn økning i arbeidsledighet fra 1880 til 1930. I ti års perioden fra 1920 til 1930 stiger den med om lag 100 tusen personer. Det er altså tydelige tendenser til økning i antall ikke yrkesaktive.
+
+Statistikken viser en økning i arbeidsledighet, og strukturelle endringer er blitt nevnt som en av driverne for dette, men det finnes også andre typer arbeidsledighet som kan ha påvirket arbeidskraften. Friksjonsarbeidsledighet som springer ut av skiftende klima og som dermed er betydningsfullt i Norge på grunn av lange og kalde vintre. Konjunkturarbiedsledighet som oppstår ved nedgangstider økonomisk, og friksjonsarbeidsledighet som oppstår på grunn av at det tar tid å gå fra en jobb til en annen (Stokke, Aarvaag og Stoltz, 2022).
+
+Besvarelsen vil nå se nærmere på den økonomiske veksten, som er blitt beskrevet som paradokset ved perioden.
+
+```{r}
+# Bruker kode fra oppgave 1. 
+df_bnp %>% 
+  filter(year %in% c(1920:1930)) %>% # Vil kun se 1920-årene. 
+  mutate(BNP = log(BNP)) %>% 
+  ggplot(aes(x=year,y=BNP, color = "")) +
+  geom_line() +
+  theme_bw() +
+  labs(title = "BNP per person",
+     subtitle = "Log faste-2005 kroner. 1875-2017.",
+     y="BNP per person",
+     x="År",
+     caption = "Figur 1.4. Kilde: Norges Bank") + 
+  theme_fivethirtyeight() # Legger til theme. 
+```
+
+Denne figuren er allerede blitt beskrevet tidligere, men i henhold til oppgave III vil jeg gå nærmere inn på denne. BNP per person øker i hele 10 års perioden, særlig i andre halvdel. Historikere er enige om at pengepolitikken bidro til mer usikkerhet, men på andre halvdel av 1920-tallet begynte kronen å stige i verdi (Tvedt, 2022). Av figuren ser vi at BNP per person øker mer i denne perioden.
+
+Paripolitikken var særlig skadelig for næringslivet, og for de med høy gjeld. Dette bidro til at næringslivet slet med å dra nytte av tendensene til økonomisk vekst (Tvedt, 2022). Men utfra figuren ser vi at BNP per person stiger likevel. Det ble altså produsert mer per person ved slutten av 1920-året sammenlignet med starten av ti årsperioden - reallønnen steg.
+
+1920-tallet var en periode med mye endringer. Det oppsto nye næringer samtidig som ny teknologi gjorde det enklere å automatisere oppgaver. Paripolitikken gjorde skade på den økonomiske stabiliteten, men næringslivet klarte likevel å utnytte utviklingen og tendensene til økonomisk vekst. Dette gikk dog på bekostning av arbeidskraften som resulterte i mye arbeidsledighet, og som står igjen som det mest slående ved perioden. Paradoksalt nok økte likevel BNP per person som visst i figur 1.4. Norge dermed ut av 1920-årene med en sterkere økonomi på tross av mange krisesymptomer.
+
+QMD lenke : <https://github.com/loopdiggaz/SOK-1004/tree/main/Prosjektoppgave>
+
+#### **Kildeliste :**
+
+Tvedt, Knut Are: *Norges historie fra 1905 til 1939* i *Store norske leksikon* på snl.no. Hentet 21. november 2022 fra <https://snl.no/Norges_historie_fra_1905_til_1939>
+
+SSB: *Ordforklaring*. Hentet 22. November fra <https://www.ssb.no/ajax/ordforklaring?key=271070&sprak=no>
+
+Stokke, Torgeir Aarvaag; Stoltz, Gerhard: *arbeidsledighet* i *Store norske leksikon* på snl.no. Hentet 30. november 2022 fra <https://snl.no/arbeidsledighet>
+
+SSB: Historisk statistikk. Hentet 1. Desember 2022 fra <https://www.ssb.no/a/histstat/tabeller/kap09.html>
+
+\
