@@ -5,17 +5,16 @@ author: “57”
 
 format: pdf
 
-echo: true
+echo: false
 
 output: true
 
 editor: visual
 ---
 
-```{r, output: false warnings: false}
+```{r}
+#| echo: false
 
-Sys.setlocale(locale="no_NO")
-rm(list=ls()) 
 
 suppressPackageStartupMessages({
 library(tidyverse)
@@ -80,7 +79,9 @@ df_bnp <- df_bnp %>%
 
 Betrakt følgende figurer.
 
-```{r,warnings: false}
+```{r}
+#| echo: false
+#| warning: false
 df_gini %>%
   filter(year >= 1875) %>%
   filter(year <= 2017) %>%
@@ -89,7 +90,6 @@ df_gini %>%
   geom_line() +
   geom_smooth() +
   ylim(0.25,0.75) +
-  xlim(1920,1930) +
   theme_bw() +
   labs(title = "Gini-koeffisienter for inntektsfordelingen i Norge",
        subtitle = "1875–2017. Gjennomsnitt av øvre og nedre grense.",
@@ -105,8 +105,9 @@ I fra starten av 1900-tallet frem til 1980 varierer koeffisienten mye og gjennom
 I perioden 1920-1930 er koeffisienten stabil og det er liten endring i ulikhet generelt. Koeffisienten ligger på et relativt høyt nivå med en ganske skjev fordeling.
 
 ```{r}
+#| echo: false
 df_bnp %>%
-filter(year %in% c(1920:1930)) %>% 
+filter(year %in% c(1920:1980)) %>% 
 mutate(BNP = log(BNP)) %>% 
 ggplot(aes(x=year,y=BNP)) +
 geom_line() +
@@ -124,13 +125,14 @@ Figuren viser bruttonasjonalprodukt per person i et langsiktig perspektiv ( jeg 
 Figuren viser at økonomien vokser. Det blir produsert mer varer og tjenester per person, og vi tolker dette som økonomisk vekst. BNP per person ligger på om lag 10.6 i 1920 og øker til om lag 10.9 i 1930 - en relativt stor økning.
 
 ```{r}
+#| echo: false
+#| warning: false
 df_bnp %>%
 filter(year >= 1875) %>%
 ggplot(aes(x=year,y=DLBNP)) +
 geom_line() +
 geom_smooth() +
 theme_bw() +
-xlim(1920,1930) +
 labs(title = "BNP per person",
      subtitle = "Årlig endring. Log faste-2005 kroner. 1875-2017",
      y="BNP per person",
@@ -147,8 +149,7 @@ Betrakt følgende figurer.
 **Merknad.** Inntektene må skaleres når vi beregner andeler. La $a_{x-y,t}$ være inntektsandelen til intervallet mellom $x$ og $y$ i år $t$. BNP per person i år $t$ er gitt ved $\text{bnp}_{t}$ og er lagret i `df_bnp`. For eksempel så vil $a_{50-60,2005}$ og $bnp_{2005}$ være gitt ved `df_andeler$share_50_60` og `df_bnp$BNP` når `year` er lik `2005`. Da vil gjennomsnittlig inntekt i intervallet være gitt ved $$a_{x-y,t}\times\frac{100}{x-y}\times \text{bnp}_{t}.$$
 
 ```{r}
-#| output: false
-
+#| echo: false
 # ny tabell hvor vi skal beregne inntekter
 df <- df_andeler 
 
@@ -207,8 +208,10 @@ andeler <- df$var %>%
 ```
 
 ```{r}
+#| echo: false
+
 df %>% 
-  filter(year %in% c(1920:1930)) %>% 
+  filter(year %in% c(1920:1980)) %>% 
   filter(var %in% andeler[1:10]) %>% 
   mutate(verdi=verdi/(10^5)) %>%
   ggplot(aes(x=year,y=verdi,color=var)) +
@@ -225,8 +228,9 @@ theme_bw()
 Figuren viser BNP per person målt i hundretusener med faste 2005 kroner. Utvalget er inntektsfordelt i 10 desiler. Den øverste desilen er den delen av befolkningen med størst BNP per person, og den nederste desilen er den delen av befolkningen med minst BNP per person. Her ser vi tydelige forskjeller i hvor mye som produseres per desil. De som befinner seg i den øverste desilen har en BNP på om lag 250 tusen kroner per person. Mens de som befinner seg i den nederste desilen har en BNP per person på om lag 2500 kroner. Dette underbygger den skjeve fordelingen vi så i gini-koeffisienten. Videre er det vanskelig å sammenligne de nederste desilene, de ligger for kompakt.
 
 ```{r}
+#| echo: false
 df %>% 
-  filter(year %in% c(1920:1930)) %>% 
+  filter(year %in% c(1920:1980)) %>% 
   mutate(verdi=log(verdi)) %>% 
   filter(var %in% andeler[1:10]) %>% 
   
@@ -253,8 +257,9 @@ Her er det brukt en logaritmisk skala, slik at vi enklere kan skille mellom desi
 
 I denne besvarelsen skal jeg se nærmere på arbeidsledighet og økonomisk vekst i Norge på 1920-tallet. Jeg vil starte med å presentere statistikk knyttet til arbeidsledighet og yrkesaktivitet i forskjellige næringer, og deretter se nærmere på statistikk knyttet til den økonomiske veksten.
 
-Jeg har hentet data fra SSB: <https://www.ssb.no/a/histstat>, og oppgaven bygger på disse dataene. Disse er fra folke og boligtellinger, og er publisert i serien "Norges Offisielle Statistikk". \
-I besvarelsen jeg bruker begrepene ikke yrkesaktiv og arbeidsledig om en annen, og jeg tar utgangspunkt i BNP per person når jeg beskriver den økonomiske veksten. Her må vi ikke glemme at indeksen regner om til et enkelt tall, og at en slik utregning kan gjøres på mange forskjellige måter.
+Jeg har hentet data fra SSB: <https://www.ssb.no/a/histstat>, og oppgaven bygger på disse dataene. Disse er fra folke og boligtellinger, og er publisert i serien "Norges Offisielle Statistikk".\
+
+I besvarelsen bruker jeg begrepene ikke yrkesaktiv og arbeidsledig om en annen, og tar utgangspunkt i BNP når jeg beskriver den økonomiske veksten. Her må vi ikke glemme at indeksen regner om til et enkelt tall, og at en slik utregning kan gjøres på mange forskjellige måter.
 
 ```{r}
 library(httr)
@@ -339,6 +344,7 @@ df_yrkesaktive_prosent %>%
        ,subtitle = "prosent sammenligning av 1920 og 1930", 
        caption ="Figur 1.2. Kilde : Historisk statistikk fra SSB") + 
   theme_fivethirtyeight()
+
 ```
 
 Figuren viser utviklingen antall yrkesaktive i forskjellige næringer. Det er nedgang i flere av næringene men spesielt i de to største som var industri og jordbruk. Det er også nedgang i antall yrkesaktive i : Bygge- anleggsvirksomhet, finansinstitusjoner og eiendomsdrift, kraft og vannforsyning og skogbruk og jakt. Nedgangen i antall yrkesaktive er sammensatt og kan ha mange årsaker, men jeg vil fokusere på endringer i strukturen eller "den nye arbeidsdagen" (Tvedt, 2022) som oppsto som et resultat av teknologiske nyvinninger og endringer i produksjonsmetodene.
@@ -353,6 +359,7 @@ I fiske var det en overgang fra åre og seil til motor, og man begynte å bruke 
 Videre var mellomkrigstiden en periode med økonomisk fremgang. Industrien utnyttet billig fossekraft, og begynte investere utenlands. Det oppsto nye næringer som gruvedrift, jern og metall industri og malmutvinning (Tvedt, 2022). Disse næringene var med på å stimulere økonomien.
 
 ```{r}
+#| warning: false
 # Filtrerer ut næring og endrer år til numeric. 
 ikke_yrkesaktive <- df_yrkesaktive %>% 
   filter(næring == "Ikke yrkesaktive") %>% 
